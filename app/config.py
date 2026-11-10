@@ -6,7 +6,10 @@ load_dotenv()
 
 class Settings(BaseModel):
     PROJECT_NAME: str = "AI Moderation System"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./moderation.db")
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "sqlite+aiosqlite:////tmp/moderation.db" if os.getenv("VERCEL") else "sqlite+aiosqlite:///./moderation.db"
+    )
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     QUARANTINE_THRESHOLD: int = int(os.getenv("QUARANTINE_THRESHOLD", "3"))
