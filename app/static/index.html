@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Платформа отзывов & AI Модерация</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Шапка -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <span class="logo-icon">🛡️</span>
+        <span class="logo-text">AI Moderation Platform</span>
+      </div>
+      <nav class="nav-links">
+        <a href="/" class="active">Публичная лента</a>
+        <a href="/admin" class="btn-admin">Админ-панель 🔐</a>
+        <a href="/docs" target="_blank" class="nav-doc">API Docs ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-container">
+    
+    <!-- Секция формы отправки -->
+    <section class="card form-card">
+      <div class="card-header">
+        <h2>✍️ Оставить отзыв, комментарий или заявку</h2>
+        <p class="subtitle">Сообщения проходят мгновенную проверку RegEx и интеллектуальную AI-модерацию Gemini</p>
+      </div>
+
+      <form id="messageForm">
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="userName">Ваше имя</label>
+            <input type="text" id="userName" placeholder="Например, Азиз или Анна" value="Гость" required>
+          </div>
+          <div class="form-group flex-1">
+            <label for="msgType">Тип публикации</label>
+            <select id="msgType">
+              <option value="COMMENT">💬 Комментарий</option>
+              <option value="REVIEW">⭐ Отзыв о сервисе</option>
+              <option value="TICKET">📩 Заявка / Вопрос</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="textarea-header">
+            <label for="msgText">Текст сообщения</label>
+            <span class="char-count"><span id="currentCount">0</span> / 5000</span>
+          </div>
+          <textarea id="msgText" rows="4" placeholder="Напишите ваш отзыв на русском, узбекском или английском языке..." required></textarea>
+          
+          <!-- Предупреждение Pre-check RegEx в реальном времени -->
+          <div id="regexWarning" class="regex-alert hidden">
+            <span class="alert-icon">⚠️</span>
+            <span id="regexWarningText">В сообщении запрещено использовать ссылки, контакты или ненормативную лексику</span>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button type="submit" id="submitBtn" class="btn btn-primary">
+            <span class="btn-text">Отправить на публикацию</span>
+            <span class="spinner hidden" id="submitSpinner"></span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Уведомление о результате модерации -->
+      <div id="resultBanner" class="result-banner hidden"></div>
+    </section>
+
+    <!-- Секция публичной ленты -->
+    <section class="feed-section">
+      <div class="feed-header">
+        <h3>Опубликованные сообщения (<span id="feedCount">0</span>)</h3>
+        <div class="filter-pills">
+          <button class="pill active" data-filter="">Все</button>
+          <button class="pill" data-filter="REVIEW">Отзывы</button>
+          <button class="pill" data-filter="COMMENT">Комментарии</button>
+          <button class="pill" data-filter="TICKET">Заявки</button>
+        </div>
+      </div>
+
+      <div id="feedList" class="feed-list">
+        <div class="loading-state">Загрузка сообщений...</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Модальное окно жалобы (Этап 3) -->
+  <div id="reportModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h4>🚨 Пожаловаться на сообщение</h4>
+        <button id="closeReportModal" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Выберите причину жалобы. Сообщения, получившие несколько жалоб, автоматически отправляются в карантин модераторам.</p>
+        
+        <form id="reportForm">
+          <input type="hidden" id="reportMessageId">
+          <div class="form-group">
+            <label>Причина нарушения:</label>
+            <div class="radio-options">
+              <label class="radio-label">
+                <input type="radio" name="reportReason" value="SPAM" checked>
+                <span>📢 Спам или реклама</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="reportReason" value="INSULT">
+                <span>🤬 Оскорбление, токсичность или травля</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="reportReason" value="LINKS">
+                <span>🔗 Скрытые ссылки или контактные данные</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="reportReason" value="CTA">
+                <span>👉 Несанкционированный призыв к действию (CTA)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="reportReason" value="OTHER">
+                <span>⚠️ Другое нарушение</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reportComment">Дополнительный комментарий (до 200 симв.):</label>
+            <textarea id="reportComment" maxlength="200" rows="2" placeholder="Опишите подробнее, что нарушено..."></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" id="cancelReportBtn" class="btn btn-secondary">Отмена</button>
+            <button type="submit" class="btn btn-danger">Отправить жалобу</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/client.js"></script>
+</body>
+</html>
